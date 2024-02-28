@@ -285,6 +285,9 @@ public class ORM<T> {
     public T[] select(Connection connection, Integer pageNumber, Integer nElementsPerPage, boolean isTransactional)
             throws Exception {
         try {
+            if (pageNumber <= 0) {
+                throw new Exception("Le numero de page ne doit etre inferieur ou egal a 0");
+            }
             int offset = (pageNumber - 1) * nElementsPerPage;
             String request = "SELECT * FROM " + getClass().getSimpleName() + " LIMIT " + nElementsPerPage + " OFFSET "
                     + offset;
@@ -327,19 +330,23 @@ public class ORM<T> {
         }
     }
 
-
     @SuppressWarnings("unchecked")
-    public T[] selectWhere(Connection connection, Integer pageNumber, Integer nElementsPerPage, boolean isTransactional, String where) throws Exception {
+    public T[] selectWhere(Connection connection, Integer pageNumber, Integer nElementsPerPage, boolean isTransactional,
+            String where) throws Exception {
         try {
+            if (pageNumber <= 0) {
+                throw new Exception("Le numero de page ne doit etre inferieur ou egal a 0");
+            }
             int offset = (pageNumber - 1) * nElementsPerPage;
-            String request = "SELECT * FROM " + getClass().getSimpleName() + " WHERE " + where + " LIMIT " + nElementsPerPage + " OFFSET " + offset;
-            
+            String request = "SELECT * FROM " + getClass().getSimpleName() + " WHERE " + where + " LIMIT "
+                    + nElementsPerPage + " OFFSET " + offset;
+
             Statement st = connection.createStatement();
             ResultSet res = st.executeQuery(request);
-            
+
             Field[] fields = getClass().getDeclaredFields();
             ArrayList<T> tLists = new ArrayList<T>();
-            
+
             while (res.next()) {
                 T t = ((T) getClass().getConstructor().newInstance());
                 for (int i = 0; i < fields.length; i++) {
@@ -362,7 +369,7 @@ public class ORM<T> {
                 }
                 tLists.add(t);
             }
-    
+
             T[] resultArray = (T[]) Array.newInstance(getClass(), tLists.size());
             return tLists.toArray(resultArray);
         } finally {
@@ -373,14 +380,18 @@ public class ORM<T> {
     }
 
     @SuppressWarnings("unchecked")
-    public T[] select(Connection connection, Integer pageNumber, Integer nElementsPerPage, boolean isTransactional, String specialQuery) throws Exception {
+    public T[] select(Connection connection, Integer pageNumber, Integer nElementsPerPage, boolean isTransactional,
+            String specialQuery) throws Exception {
         try {
+            if (pageNumber <= 0) {
+                throw new Exception("Le numero de page ne doit etre inferieur ou egal a 0");
+            }
             int offset = (pageNumber - 1) * nElementsPerPage;
             String request = specialQuery + " LIMIT " + nElementsPerPage + " OFFSET " + offset;
-    
+
             Statement st = connection.createStatement();
             ResultSet res = st.executeQuery(request);
-    
+
             Field[] fields = getClass().getDeclaredFields();
             ArrayList<T> tLists = new ArrayList<T>();
             while (res.next()) {
@@ -405,7 +416,7 @@ public class ORM<T> {
                 }
                 tLists.add(t);
             }
-    
+
             T[] resultArray = (T[]) Array.newInstance(getClass(), tLists.size());
             return tLists.toArray(resultArray);
         } finally {
