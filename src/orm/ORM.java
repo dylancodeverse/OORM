@@ -137,7 +137,6 @@ public class ORM<T> {
 
     }
 
-
     public void insert(Connection connection, boolean isTransactional) throws Exception {
         String tableName = this.getClass().getSimpleName();
         StringBuilder columns = new StringBuilder("(");
@@ -240,7 +239,7 @@ public class ORM<T> {
         PreparedStatement preparedStatement = null;
         try {
             connection.setAutoCommit(false);
-    
+
             StringBuilder request = new StringBuilder("UPDATE ").append(getClass().getSimpleName()).append(" SET ");
             Field[] fields = getClass().getDeclaredFields();
             for (int i = 0; i < fields.length; i++) {
@@ -250,11 +249,11 @@ public class ORM<T> {
                 }
             }
             request.deleteCharAt(request.lastIndexOf(",")).append(" WHERE ").append(condition);
-    
+
             System.out.println(request);
-            
+
             preparedStatement = connection.prepareStatement(request.toString());
-    
+
             int parameterIndex = 1;
             for (Field field : fields) {
                 field.setAccessible(true);
@@ -268,15 +267,149 @@ public class ORM<T> {
                     parameterIndex++;
                 }
             }
-    
+
             preparedStatement.executeUpdate();
-            
+
         } finally {
             if (preparedStatement != null) {
                 preparedStatement.close();
             }
             if (!isTransactional) {
                 connection.commit();
+                connection.close();
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public T[] select(Connection connection, Integer pageNumber, Integer nElementsPerPage, boolean isTransactional)
+            throws Exception {
+        try {
+            int offset = (pageNumber - 1) * nElementsPerPage;
+            String request = "SELECT * FROM " + getClass().getSimpleName() + " LIMIT " + nElementsPerPage + " OFFSET "
+                    + offset;
+
+            Statement st = connection.createStatement();
+            ResultSet res = st.executeQuery(request);
+
+            Field[] fields = getClass().getDeclaredFields();
+            ArrayList<T> tLists = new ArrayList<T>();
+
+            while (res.next()) {
+                T t = ((T) getClass().getConstructor().newInstance());
+                for (int i = 0; i < fields.length; i++) {
+                    try {
+                        Object obj = res.getObject(fields[i].getName());
+                        try {
+                            Method m = getClass()
+                                    .getDeclaredMethod("set" + fields[i].getName().substring(0, 1).toUpperCase()
+                                            + fields[i].getName().substring(1), obj.getClass());
+                            m.invoke(t, obj);
+                        } catch (NoSuchMethodException e) {
+                            fields[i].setAccessible(true);
+                            fields[i].set(t, obj);
+                        }
+                    } catch (Exception e) {
+                        // on s'en fout
+                        System.out.println(e);
+                        System.out.println("WARNING:" + fields[i].getName() + " column does not exist");
+                    }
+                }
+                tLists.add(t);
+            }
+
+            T[] resultArray = (T[]) Array.newInstance(getClass(), tLists.size());
+            return tLists.toArray(resultArray);
+        } finally {
+            if (!isTransactional) {
+                connection.close();
+            }
+        }
+    }
+
+
+    @SuppressWarnings("unchecked")
+    public T[] selectWhere(Connection connection, Integer pageNumber, Integer nElementsPerPage, boolean isTransactional, String where) throws Exception {
+        try {
+            int offset = (pageNumber - 1) * nElementsPerPage;
+            String request = "SELECT * FROM " + getClass().getSimpleName() + " WHERE " + where + " LIMIT " + nElementsPerPage + " OFFSET " + offset;
+            
+            Statement st = connection.createStatement();
+            ResultSet res = st.executeQuery(request);
+            
+            Field[] fields = getClass().getDeclaredFields();
+            ArrayList<T> tLists = new ArrayList<T>();
+            
+            while (res.next()) {
+                T t = ((T) getClass().getConstructor().newInstance());
+                for (int i = 0; i < fields.length; i++) {
+                    try {
+                        Object obj = res.getObject(fields[i].getName());
+                        try {
+                            Method m = getClass()
+                                    .getDeclaredMethod("set" + fields[i].getName().substring(0, 1).toUpperCase()
+                                            + fields[i].getName().substring(1), obj.getClass());
+                            m.invoke(t, obj);
+                        } catch (NoSuchMethodException e) {
+                            fields[i].setAccessible(true);
+                            fields[i].set(t, obj);
+                        }
+                    } catch (Exception e) {
+                        // on s'en fout
+                        System.out.println(e);
+                        System.out.println("WARNING:" + fields[i].getName() + " column does not exist");
+                    }
+                }
+                tLists.add(t);
+            }
+    
+            T[] resultArray = (T[]) Array.newInstance(getClass(), tLists.size());
+            return tLists.toArray(resultArray);
+        } finally {
+            if (!isTransactional) {
+                connection.close();
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public T[] select(Connection connection, Integer pageNumber, Integer nElementsPerPage, boolean isTransactional, String specialQuery) throws Exception {
+        try {
+            int offset = (pageNumber - 1) * nElementsPerPage;
+            String request = specialQuery + " LIMIT " + nElementsPerPage + " OFFSET " + offset;
+    
+            Statement st = connection.createStatement();
+            ResultSet res = st.executeQuery(request);
+    
+            Field[] fields = getClass().getDeclaredFields();
+            ArrayList<T> tLists = new ArrayList<T>();
+            while (res.next()) {
+                T t = ((T) getClass().getConstructor().newInstance());
+                for (int i = 0; i < fields.length; i++) {
+                    try {
+                        Object obj = res.getObject(fields[i].getName());
+                        try {
+                            Method m = getClass()
+                                    .getDeclaredMethod("set" + fields[i].getName().substring(0, 1).toUpperCase()
+                                            + fields[i].getName().substring(1), obj.getClass());
+                            m.invoke(t, obj);
+                        } catch (NoSuchMethodException e) {
+                            fields[i].setAccessible(true);
+                            fields[i].set(t, obj);
+                        }
+                    } catch (Exception e) {
+                        // on s'en fout
+                        System.out.println(e);
+                        System.out.println("WARNING:" + fields[i].getName() + " column does not exist");
+                    }
+                }
+                tLists.add(t);
+            }
+    
+            T[] resultArray = (T[]) Array.newInstance(getClass(), tLists.size());
+            return tLists.toArray(resultArray);
+        } finally {
+            if (!isTransactional) {
                 connection.close();
             }
         }
