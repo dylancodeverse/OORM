@@ -237,27 +237,44 @@ public class ORM<T> {
     }
 
     public void update(Connection connection, boolean isTransactional, String condition) throws Exception {
+        PreparedStatement preparedStatement = null;
         try {
             connection.setAutoCommit(false);
-
-            String request = "update " + getClass().getSimpleName() + " set ";
+    
+            StringBuilder request = new StringBuilder("UPDATE ").append(getClass().getSimpleName()).append(" SET ");
             Field[] fields = getClass().getDeclaredFields();
             for (int i = 0; i < fields.length; i++) {
                 fields[i].setAccessible(true);
                 if (fields[i].get(this) != null) {
-                    if ((fields[i].get(this) instanceof Number)) {
-                        request = request + fields[i].getName() + " = " + fields[i].get(this) + " , ";
-                    } else {
-                        request = request + fields[i].getName() + " = " + "'" + fields[i].get(this) + "' , ";
-                    }
+                    request.append(fields[i].getName()).append(" = ?, ");
                 }
             }
-            request = request.substring(0, request.lastIndexOf(",")) + " where " + condition;
-
+            request.deleteCharAt(request.lastIndexOf(",")).append(" WHERE ").append(condition);
+    
             System.out.println(request);
-            connection.createStatement().executeUpdate(request);
-
+            
+            preparedStatement = connection.prepareStatement(request.toString());
+    
+            int parameterIndex = 1;
+            for (Field field : fields) {
+                field.setAccessible(true);
+                Object value = field.get(this);
+                if (value != null) {
+                    if (value instanceof Number) {
+                        preparedStatement.setObject(parameterIndex, value);
+                    } else {
+                        preparedStatement.setString(parameterIndex, value.toString());
+                    }
+                    parameterIndex++;
+                }
+            }
+    
+            preparedStatement.executeUpdate();
+            
         } finally {
+            if (preparedStatement != null) {
+                preparedStatement.close();
+            }
             if (!isTransactional) {
                 connection.commit();
                 connection.close();
