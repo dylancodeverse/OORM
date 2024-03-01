@@ -4,7 +4,7 @@ import java.sql.Connection;
 
 public abstract class DynamicConnection<T> extends ORM<T> {
 
-    public abstract Connection getConnection();
+    public abstract Connection getConnection() throws Exception;
 
     protected T[] select() throws Exception {
         return select(getConnection(), false);
