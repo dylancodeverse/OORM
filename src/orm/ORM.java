@@ -8,6 +8,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Objects;
+
+import orm.annotations.Id;
 
 /**
  * ORM
@@ -176,6 +179,8 @@ public class ORM<T> {
                     parameterIndex++;
                 }
             }
+
+            System.out.println(statement.toString());
             // Exécution de la requête
             statement.executeUpdate();
         }
@@ -426,5 +431,61 @@ public class ORM<T> {
         }
     }
 
+    public void updateById(Connection connection, boolean isTransactional) throws Exception {
+        PreparedStatement preparedStatement = null;
+        try {
+            connection.setAutoCommit(false);
+
+            StringBuilder request = new StringBuilder("UPDATE ").append(getClass().getSimpleName()).append(" SET ");
+            Field[] fields = getClass().getDeclaredFields();
+            String condition = null;
+
+            for (Field field : fields) {
+                field.setAccessible(true);
+                Id idAnnotation = field.getAnnotation(Id.class);
+                if (idAnnotation != null) {
+                    condition = field.getName() + " = ?";
+                } else {
+                    if (field.get(this) != null) {
+                        request.append(field.getName()).append(" = ?, ");
+                    }
+                }
+            }
+
+            Objects.requireNonNull(condition, "No field annotated with @Id found");
+
+            request.deleteCharAt(request.lastIndexOf(",")).append(" WHERE ").append(condition);
+
+            preparedStatement = connection.prepareStatement(request.toString());
+
+            int parameterIndex = 1;
+            Object idValue = null;
+            for (Field field : fields) {
+                field.setAccessible(true);
+                Id idAnnotation = field.getAnnotation(Id.class);
+                if (idAnnotation != null) {
+                    idValue = field.get(this);
+                } else {
+                    Object value = field.get(this);
+                    if (value != null) {
+                        preparedStatement.setObject(parameterIndex, value);
+                        parameterIndex++;
+                    }
+                }
+            }
+            preparedStatement.setObject(parameterIndex, idValue);
+            System.out.println(preparedStatement.toString());
+            preparedStatement.executeUpdate();
+
+        } finally {
+            if (preparedStatement != null) {
+                preparedStatement.close();
+            }
+            if (!isTransactional) {
+                connection.commit();
+                connection.close();
+            }
+        }
+    }
 
 }

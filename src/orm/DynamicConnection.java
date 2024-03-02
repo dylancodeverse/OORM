@@ -43,4 +43,8 @@ public abstract class DynamicConnection<T> extends ORM<T> {
             throws Exception {
         return selectWhere(getConnection(), pageNumber, elementsPerPage, false, query);
     }
+
+    public void updateById() throws Exception {
+        updateById(getConnection(), false);
+    }
 }
