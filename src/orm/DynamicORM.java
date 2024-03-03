@@ -8,11 +8,11 @@ import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DynamicORM<T> extends DynamicConnection<T> {
+public class DynamicORM<T> extends ORM<T> {
 
-    protected String defaultFileName = "dynamic-connection.txt";
+    private String defaultFileName = "dynamic-connection.txt";
 
-    public String getFilePath() {
+    private String getFilePath() {
         File currentDir = new File(System.getProperty("user.dir")); // Le répertoire de travail actuel
         List<File> foundFiles = new ArrayList<>();
         searchFile(currentDir, defaultFileName, foundFiles); // Commencer la recherche
@@ -54,8 +54,7 @@ public class DynamicORM<T> extends DynamicConnection<T> {
         return content.toString();
     }
 
-    @Override
-    public Connection getConnection() throws Exception {
+    private Connection connection() throws Exception {
         String fileContent = readFromFile();
         List<String> lst = fileContent.lines().toList();
         String url = null, password = null, user = null;
@@ -77,4 +76,45 @@ public class DynamicORM<T> extends DynamicConnection<T> {
         return DriverManager.getConnection(url, user, password);
     }
 
+    public T[] select() throws Exception {
+        return select(connection(), false);
+    }
+
+    public T[] select(String specialQuery) throws Exception {
+        return select(connection(), false, specialQuery);
+    }
+
+    public T[] selectWhere(String where) throws Exception {
+        return selectWhere(connection(), false, where);
+    }
+
+    public void insert() throws Exception {
+        insert(connection(), false);
+    }
+
+    public void deleteWhere(String where) throws Exception {
+        deleteWhere(connection(), false, where);
+    }
+
+    public void update(String condition) throws Exception {
+        update(connection(), false, condition);
+    }
+
+    public T[] selectPagination(Integer pageNumber, Integer elementsPerPage) throws Exception {
+        return select(connection(), pageNumber, elementsPerPage, false);
+    }
+
+    public T[] selectPaginationWhere(String condition, Integer pageNumber, Integer elementsPerPage)
+            throws Exception {
+        return selectWhere(connection(), pageNumber, elementsPerPage, false, condition);
+    }
+
+    public T[] selectPaginationSpecialQuery(String query, Integer pageNumber, Integer elementsPerPage)
+            throws Exception {
+        return selectWhere(connection(), pageNumber, elementsPerPage, false, query);
+    }
+
+    public void updateById() throws Exception {
+        updateById(connection(), false);
+    }
 }

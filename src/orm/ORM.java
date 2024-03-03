@@ -168,7 +168,8 @@ public class ORM<T> {
         sql.append(columns).append(") VALUES ").append(values).append(")");
 
         // Préparation de la requête PreparedStatement
-        try (PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+        try (PreparedStatement statement = connection.prepareStatement(sql.toString(),
+                Statement.RETURN_GENERATED_KEYS)) {
             int parameterIndex = 1;
             // Attribution des valeurs aux paramètres de requête
             for (Field field : fields) {
@@ -183,45 +184,22 @@ public class ORM<T> {
             System.out.println(statement.toString());
             // Exécution de la requête
             statement.executeUpdate();
-        }
-    }
 
-    public Integer insertWithGeneratedKeys(Connection connection, boolean isTransactional) throws Exception {
-        try {
-            connection.setAutoCommit(false);
-            String request = "insert into " + getClass().getSimpleName();
-            Field[] fields = getClass().getDeclaredFields();
-            String values = "(";
-            String columns = "(";
-            for (int i = 0; i < fields.length; i++) {
-                fields[i].setAccessible(true);
-                if (fields[i].get(this) != null) {
-                    columns = columns + fields[i].getName() + ",";
-                    if (!(fields[i].get(this) instanceof Number)) {
-                        values = values + "'" + fields[i].get(this) + "'" + ",";
-                    } else {
-                        values = values + fields[i].get(this) + ",";
+            try (ResultSet keys = statement.getGeneratedKeys()) {
+                if (keys.next()) {
+                    for (Field field : fields) {
+                        field.setAccessible(true);
+                        Id idAnnotation = field.getAnnotation(Id.class);
+                        if (idAnnotation != null) {
+                            Method m = getClass()
+                                    .getDeclaredMethod("set" + field.getName().substring(0, 1).toUpperCase()
+                                            + field.getName().substring(1), field.getType());
+                            m.invoke(this, keys.getObject(1));
+                            break;
+                        }
                     }
                 }
-            }
-            columns = columns.substring(0, columns.lastIndexOf(",")) + ")";
-            values = values.substring(0, values.lastIndexOf(",")) + ")";
 
-            request = request + columns + "values" + values;
-
-            Statement s = connection.createStatement();
-            s.executeUpdate(request);
-            ResultSet res = s.getGeneratedKeys();
-            if (res.next()) {
-                Integer idGenere = res.getInt(1);
-                return idGenere;
-            } else {
-                throw new Exception("No key generated");
-            }
-        } finally {
-            if (!isTransactional) {
-                connection.commit();
-                connection.close();
             }
         }
     }
