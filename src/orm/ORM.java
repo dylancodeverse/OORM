@@ -38,7 +38,13 @@ public class ORM<T> {
                         } catch (NoSuchMethodException e) {
                             fields[i].setAccessible(true);
                             fields[i].set(t, obj);
+                        } catch (NullPointerException e1) {
+                            Method m = getClass()
+                                    .getDeclaredMethod("set" + fields[i].getName().substring(0, 1).toUpperCase()
+                                            + fields[i].getName().substring(1), fields[i].getType());
+                            m.invoke(t, obj);
                         }
+
                     } catch (Exception e) {
                         // on s'en fout
                         System.out.println(e);
@@ -101,6 +107,7 @@ public class ORM<T> {
     @SuppressWarnings("unchecked")
     public T[] selectWhere(Connection connection, boolean isTransactional, String where) throws Exception {
         try {
+
             String request = "SELECT * FROM " + getClass().getSimpleName() + " where " + where;
             System.out.println(request);
             Statement st = connection.createStatement();
@@ -141,6 +148,9 @@ public class ORM<T> {
     }
 
     public void insert(Connection connection, boolean isTransactional) throws Exception {
+        if (isTransactional) {
+            connection.setAutoCommit(false);
+        }
         String tableName = this.getClass().getSimpleName();
         StringBuilder columns = new StringBuilder("(");
         StringBuilder values = new StringBuilder("(");
@@ -183,9 +193,19 @@ public class ORM<T> {
 
             System.out.println(statement.toString());
             // Exécution de la requête
-            statement.executeUpdate();
+            try {
+                statement.executeUpdate();
+            } catch (Exception e) {
+                if (isTransactional) {
+                    throw e;
+                } else {
+                    connection.close();
+                    throw e;
+                }
+            }
 
-            try (ResultSet keys = statement.getGeneratedKeys()) {
+            try {
+                ResultSet keys = statement.getGeneratedKeys();
                 if (keys.next()) {
                     for (Field field : fields) {
                         field.setAccessible(true);
@@ -199,6 +219,12 @@ public class ORM<T> {
                         }
                     }
                 }
+
+            } catch (Exception e) {
+                if (!isTransactional) {
+                    connection.close();
+                }
+                throw e;
 
             }
         }
