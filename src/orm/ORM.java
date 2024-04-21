@@ -128,6 +128,12 @@ public class ORM<T> {
                             fields[i].setAccessible(true);
                             fields[i].set(t, obj);
                         }
+                        catch (NullPointerException e1) {
+                            Method m = getClass()
+                                    .getDeclaredMethod("set" + fields[i].getName().substring(0, 1).toUpperCase()
+                                            + fields[i].getName().substring(1), fields[i].getType());
+                            m.invoke(t, obj);
+                        }
                     } catch (Exception e) {
                         // on s'en fout
                         System.out.println(e);
@@ -321,6 +327,12 @@ public class ORM<T> {
                             fields[i].setAccessible(true);
                             fields[i].set(t, obj);
                         }
+                        catch (NullPointerException e1) {
+                            Method m = getClass()
+                                    .getDeclaredMethod("set" + fields[i].getName().substring(0, 1).toUpperCase()
+                                            + fields[i].getName().substring(1), fields[i].getType());
+                            m.invoke(t, obj);
+                        }
                     } catch (Exception e) {
                         // on s'en fout
                         System.out.println(e);
@@ -370,6 +382,12 @@ public class ORM<T> {
                             fields[i].setAccessible(true);
                             fields[i].set(t, obj);
                         }
+                        catch (NullPointerException e1) {
+                            Method m = getClass()
+                                    .getDeclaredMethod("set" + fields[i].getName().substring(0, 1).toUpperCase()
+                                            + fields[i].getName().substring(1), fields[i].getType());
+                            m.invoke(t, obj);
+                        }
                     } catch (Exception e) {
                         // on s'en fout
                         System.out.println(e);
@@ -416,6 +434,12 @@ public class ORM<T> {
                         } catch (NoSuchMethodException e) {
                             fields[i].setAccessible(true);
                             fields[i].set(t, obj);
+                        }
+                        catch (NullPointerException e1) {
+                            Method m = getClass()
+                                    .getDeclaredMethod("set" + fields[i].getName().substring(0, 1).toUpperCase()
+                                            + fields[i].getName().substring(1), fields[i].getType());
+                            m.invoke(t, obj);
                         }
                     } catch (Exception e) {
                         // on s'en fout
