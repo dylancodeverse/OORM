@@ -1,3 +1,3 @@
-url=jdbc:postgresql://localhost:5432/test
+url=jdbc:postgresql://localhost:5432/clinique
 password=post
 user=postgres
