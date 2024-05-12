@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Objects;
 
 import orm.annotations.Id;
+import orm.annotations.Ignore;
 
 /**
  * ORM
@@ -127,8 +128,7 @@ public class ORM<T> {
                         } catch (NoSuchMethodException e) {
                             fields[i].setAccessible(true);
                             fields[i].set(t, obj);
-                        }
-                        catch (NullPointerException e1) {
+                        } catch (NullPointerException e1) {
                             Method m = getClass()
                                     .getDeclaredMethod("set" + fields[i].getName().substring(0, 1).toUpperCase()
                                             + fields[i].getName().substring(1), fields[i].getType());
@@ -169,8 +169,9 @@ public class ORM<T> {
 
         for (Field field : fields) {
             field.setAccessible(true);
+            boolean isAnnotationPresent = field.isAnnotationPresent(Ignore.class);
             Object value = field.get(this);
-            if (value != null) {
+            if (value != null && !isAnnotationPresent) {
                 columns.append(field.getName()).append(",");
                 values.append("?,");
             }
@@ -191,7 +192,9 @@ public class ORM<T> {
             for (Field field : fields) {
                 field.setAccessible(true);
                 Object value = field.get(this);
-                if (value != null) {
+                boolean isAnnotationPresent = field.isAnnotationPresent(Ignore.class);
+
+                if (value != null && !isAnnotationPresent) {
                     statement.setObject(parameterIndex, value);
                     parameterIndex++;
                 }
@@ -259,7 +262,8 @@ public class ORM<T> {
             Field[] fields = getClass().getDeclaredFields();
             for (int i = 0; i < fields.length; i++) {
                 fields[i].setAccessible(true);
-                if (fields[i].get(this) != null) {
+                boolean isAnnotationPresent = fields[i].isAnnotationPresent(Ignore.class);
+                if (fields[i].get(this) != null && !isAnnotationPresent) {
                     request.append(fields[i].getName()).append(" = ?, ");
                 }
             }
@@ -273,7 +277,8 @@ public class ORM<T> {
             for (Field field : fields) {
                 field.setAccessible(true);
                 Object value = field.get(this);
-                if (value != null) {
+                boolean isAnnoted = field.isAnnotationPresent(Ignore.class);
+                if (value != null && !isAnnoted) {
                     if (value instanceof Number) {
                         preparedStatement.setObject(parameterIndex, value);
                     } else {
@@ -326,8 +331,7 @@ public class ORM<T> {
                         } catch (NoSuchMethodException e) {
                             fields[i].setAccessible(true);
                             fields[i].set(t, obj);
-                        }
-                        catch (NullPointerException e1) {
+                        } catch (NullPointerException e1) {
                             Method m = getClass()
                                     .getDeclaredMethod("set" + fields[i].getName().substring(0, 1).toUpperCase()
                                             + fields[i].getName().substring(1), fields[i].getType());
@@ -381,8 +385,7 @@ public class ORM<T> {
                         } catch (NoSuchMethodException e) {
                             fields[i].setAccessible(true);
                             fields[i].set(t, obj);
-                        }
-                        catch (NullPointerException e1) {
+                        } catch (NullPointerException e1) {
                             Method m = getClass()
                                     .getDeclaredMethod("set" + fields[i].getName().substring(0, 1).toUpperCase()
                                             + fields[i].getName().substring(1), fields[i].getType());
@@ -434,8 +437,7 @@ public class ORM<T> {
                         } catch (NoSuchMethodException e) {
                             fields[i].setAccessible(true);
                             fields[i].set(t, obj);
-                        }
-                        catch (NullPointerException e1) {
+                        } catch (NullPointerException e1) {
                             Method m = getClass()
                                     .getDeclaredMethod("set" + fields[i].getName().substring(0, 1).toUpperCase()
                                             + fields[i].getName().substring(1), fields[i].getType());
@@ -474,7 +476,8 @@ public class ORM<T> {
                 if (idAnnotation != null) {
                     condition = field.getName() + " = ?";
                 } else {
-                    if (field.get(this) != null) {
+                    boolean isAnnotationPresent = field.isAnnotationPresent(Ignore.class);
+                    if (field.get(this) != null && !isAnnotationPresent) {
                         request.append(field.getName()).append(" = ?, ");
                     }
                 }
@@ -495,7 +498,9 @@ public class ORM<T> {
                     idValue = field.get(this);
                 } else {
                     Object value = field.get(this);
-                    if (value != null) {
+                    boolean isAnnotationPresent = field.isAnnotationPresent(Ignore.class);
+
+                    if (value != null && !isAnnotationPresent) {
                         preparedStatement.setObject(parameterIndex, value);
                         parameterIndex++;
                     }
