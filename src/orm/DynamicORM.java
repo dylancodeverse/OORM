@@ -111,7 +111,7 @@ public class DynamicORM<T> extends ORM<T> {
 
     public T[] selectPaginationSpecialQuery(String query, Integer pageNumber, Integer elementsPerPage)
             throws Exception {
-        return selectWhere(connection(), pageNumber, elementsPerPage, false, query);
+        return select(connection(), pageNumber, elementsPerPage, false, query);
     }
 
     public void updateById() throws Exception {
