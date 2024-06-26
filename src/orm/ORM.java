@@ -25,7 +25,7 @@ public class ORM<T> {
         setClassName(this.getClass());
     }
 
-    public String getClassName() {
+    private String getClassName() {
         return className;
     }
 
