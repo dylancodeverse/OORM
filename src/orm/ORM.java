@@ -12,16 +12,39 @@ import java.util.Objects;
 
 import orm.annotations.Id;
 import orm.annotations.Ignore;
+import orm.annotations.Table;
 
 /**
  * ORM
  */
 public class ORM<T> {
 
+    private String className;
+
+    public ORM() {
+        setClassName(this.getClass());
+    }
+
+    public String getClassName() {
+        return className;
+    }
+
+    public void setClassName(Class<?> class1) {
+        if (class1.isAnnotationPresent(Table.class)) {
+            setClassName(class1.getAnnotation(Table.class).name());
+        } else {
+            setClassName(class1.getSimpleName());
+        }
+    }
+
+    public void setClassName(String className) {
+        this.className = className;
+    }
+
     @SuppressWarnings("unchecked")
     public T[] select(Connection connection, boolean isTransactional) throws Exception {
         try {
-            String request = "SELECT * FROM " + getClass().getSimpleName();
+            String request = "SELECT * FROM " + getClassName();
             Statement st = connection.createStatement();
             ResultSet res = st.executeQuery(request);
             Field[] fields = getClass().getDeclaredFields();
@@ -109,7 +132,7 @@ public class ORM<T> {
     public T[] selectWhere(Connection connection, boolean isTransactional, String where) throws Exception {
         try {
 
-            String request = "SELECT * FROM " + getClass().getSimpleName() + " where " + where;
+            String request = "SELECT * FROM " + getClassName() + " where " + where;
             System.out.println(request);
             Statement st = connection.createStatement();
             ResultSet res = st.executeQuery(request);
@@ -157,7 +180,7 @@ public class ORM<T> {
         if (isTransactional) {
             connection.setAutoCommit(false);
         }
-        String tableName = this.getClass().getSimpleName();
+        String tableName = this.getClassName();
         StringBuilder columns = new StringBuilder("(");
         StringBuilder values = new StringBuilder("(");
 
@@ -243,7 +266,7 @@ public class ORM<T> {
         try {
             connection.setAutoCommit(false);
 
-            String request = "delete from " + getClass().getSimpleName() + " where " + condition;
+            String request = "delete from " + getClassName() + " where " + condition;
             connection.createStatement().executeUpdate(request);
         } finally {
             if (!isTransactional) {
@@ -258,7 +281,7 @@ public class ORM<T> {
         try {
             connection.setAutoCommit(false);
 
-            StringBuilder request = new StringBuilder("UPDATE ").append(getClass().getSimpleName()).append(" SET ");
+            StringBuilder request = new StringBuilder("UPDATE ").append(getClassName()).append(" SET ");
             Field[] fields = getClass().getDeclaredFields();
             for (int i = 0; i < fields.length; i++) {
                 fields[i].setAccessible(true);
@@ -309,7 +332,7 @@ public class ORM<T> {
                 throw new Exception("Le numero de page ne doit etre inferieur ou egal a 0");
             }
             int offset = (pageNumber - 1) * nElementsPerPage;
-            String request = "SELECT * FROM " + getClass().getSimpleName() + " LIMIT " + nElementsPerPage + " OFFSET "
+            String request = "SELECT * FROM " + getClassName() + " LIMIT " + nElementsPerPage + " OFFSET "
                     + offset;
 
             Statement st = connection.createStatement();
@@ -363,7 +386,7 @@ public class ORM<T> {
                 throw new Exception("Le numero de page ne doit etre inferieur ou egal a 0");
             }
             int offset = (pageNumber - 1) * nElementsPerPage;
-            String request = "SELECT * FROM " + getClass().getSimpleName() + " WHERE " + where + " LIMIT "
+            String request = "SELECT * FROM " + getClassName() + " WHERE " + where + " LIMIT "
                     + nElementsPerPage + " OFFSET " + offset;
 
             Statement st = connection.createStatement();
@@ -466,7 +489,7 @@ public class ORM<T> {
         try {
             connection.setAutoCommit(false);
 
-            StringBuilder request = new StringBuilder("UPDATE ").append(getClass().getSimpleName()).append(" SET ");
+            StringBuilder request = new StringBuilder("UPDATE ").append(getClassName()).append(" SET ");
             Field[] fields = getClass().getDeclaredFields();
             String condition = null;
 
