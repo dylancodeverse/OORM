@@ -117,4 +117,8 @@ public class DynamicORM<T> extends ORM<T> {
     public void updateById() throws Exception {
         updateById(connection(), false);
     }
+
+    public void insertBatch(T[] objects) throws Exception{
+        insertBatch(connection(), false, objects);
+    }
 }

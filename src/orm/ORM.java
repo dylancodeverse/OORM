@@ -262,6 +262,108 @@ public class ORM<T> {
         }
     }
 
+    
+    public void insertBatch(Connection connection, boolean isTransactional, T[] objects) throws Exception {
+        if (objects == null || objects.length == 0) {
+            throw new IllegalArgumentException("The array of objects to insert cannot be null or empty.");
+        }
+
+        if (isTransactional) {
+            connection.setAutoCommit(false);
+        }
+
+        // Assuming all objects are of the same type
+        String tableName = objects[0].getClass().getSimpleName();
+        StringBuilder columns = new StringBuilder("(");
+        StringBuilder values = new StringBuilder();
+
+        // Récupération des champs de la classe
+        Field[] fields = objects[0].getClass().getDeclaredFields();
+
+        for (Field field : fields) {
+            field.setAccessible(true);
+            if (!field.isAnnotationPresent(Ignore.class)) {
+                columns.append(field.getName()).append(",");
+            }
+        }
+
+        // Suppression de la virgule finale des chaînes de colonnes
+        columns.deleteCharAt(columns.length() - 1);
+        columns.append(")");
+
+        // Construction des placeholders de valeurs
+        StringBuilder placeholder = new StringBuilder("(");
+        for (Field field : fields) {
+            if (!field.isAnnotationPresent(Ignore.class)) {
+                placeholder.append("?,");
+            }
+        }
+        placeholder.deleteCharAt(placeholder.length() - 1).append(")");
+
+        for (int i = 0; i < objects.length; i++) {
+            values.append(placeholder).append(",");
+        }
+        values.deleteCharAt(values.length() - 1);
+
+        // Complétion de la requête SQL
+        StringBuilder sql = new StringBuilder("INSERT INTO ")
+                .append(tableName)
+                .append(columns)
+                .append(" VALUES ")
+                .append(values);
+
+        // Préparation de la requête PreparedStatement
+        try (PreparedStatement statement = connection.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
+            int parameterIndex = 1;
+            for (T obj : objects) {
+                for (Field field : fields) {
+                    field.setAccessible(true);
+                    if (!field.isAnnotationPresent(Ignore.class)) {
+                        statement.setObject(parameterIndex, field.get(obj));
+                        parameterIndex++;
+                    }
+                }
+            }
+
+            System.out.println(statement.toString());
+            // Exécution de la requête
+            try {
+                statement.executeUpdate();
+            } catch (Exception e) {
+                if (isTransactional) {
+                    connection.rollback();
+                    throw e;
+                } else {
+                    connection.close();
+                    throw e;
+                }
+            }
+
+            // Attribution des valeurs générées aux champs annotés par @Id
+            try (ResultSet keys = statement.getGeneratedKeys()) {
+                for (T obj : objects) {
+                    if (keys.next()) {
+                        for (Field field : fields) {
+                            field.setAccessible(true);
+                            if (field.isAnnotationPresent(Id.class)) {
+                                Method m = obj.getClass().getDeclaredMethod("set" + 
+                                    field.getName().substring(0, 1).toUpperCase() + 
+                                    field.getName().substring(1), field.getType());
+                                m.invoke(obj, keys.getObject(1));
+                                break;
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                if (!isTransactional) {
+                    connection.close();
+                }
+                throw e;
+            }
+        }
+    }
+
     public void deleteWhere(Connection connection, boolean isTransactional, String condition) throws Exception {
         try {
             connection.setAutoCommit(false);
